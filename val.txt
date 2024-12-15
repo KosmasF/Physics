@@ -1,0 +1,123 @@
+Kosmas@ArchLinuxLaptop: Physics $ valgrind ./main
+==17566== Memcheck, a memory error detector
+==17566== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==17566== Using Valgrind-3.24.0 and LibVEX; rerun with -h for copyright info
+==17566== Command: ./main
+==17566== 
+Platform 4
+==17566== Conditional jump or move depends on uninitialised value(s)
+==17566==    at 0x662E4AF: __intel_sse2_strrchr (in /opt/intel/opencl-runtime/linux/compiler/lib/intel64_lin/libtbb.so.2)
+==17566==    by 0x6614301: strrchr (string.h:257)
+==17566==    by 0x6614301: init_ap_data (dynamic_link.cpp:314)
+==17566==    by 0x6614301: _INTERNAL_30_______src_tbb_dynamic_link_cpp_86b21937::tbb::internal::init_dl_data() (dynamic_link.cpp:352)
+==17566==    by 0x6614256: run_initializer (tbb_misc.h:232)
+==17566==    by 0x6614256: atomic_do_once (tbb_misc.h:222)
+==17566==    by 0x6614256: atomic_once (dynamic_link.cpp:196)
+==17566==    by 0x6614256: tbb::internal::init_dynamic_link_data() (dynamic_link.cpp:385)
+==17566==    by 0x40045B6: call_init (dl-init.c:74)
+==17566==    by 0x40045B6: call_init (dl-init.c:26)
+==17566==    by 0x40046AC: _dl_init (dl-init.c:121)
+==17566==    by 0x40015C1: _dl_catch_exception (dl-catch.c:215)
+==17566==    by 0x400B4FB: dl_open_worker (dl-open.c:829)
+==17566==    by 0x4001522: _dl_catch_exception (dl-catch.c:241)
+==17566==    by 0x400B903: _dl_open (dl-open.c:905)
+==17566==    by 0x4ECBF13: dlopen_doit (dlopen.c:56)
+==17566==    by 0x4001522: _dl_catch_exception (dl-catch.c:241)
+==17566==    by 0x4001678: _dl_catch_error (dl-catch.c:260)
+==17566== 
+clGetPlatformIDs 3
+clGetPlatformIDs List Ret = 0
+getPlatformIndex 0
+clGetDeviceIDs 0
+GPU SETTING UP!!!
+==17566== Invalid read of size 4
+==17566==    at 0x115B88: Vector2D::operator-(Vector2D const&) (Units.h:66)
+==17566==    by 0x11492C: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:376)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566==  Address 0x18b0dcd8 is 8 bytes after a block of size 0 alloc'd
+==17566==    at 0x48447A8: malloc (vg_replace_malloc.c:446)
+==17566==    by 0x11353B: Polygon::PointsColliding(Vector2D*, int, Vector2D*, int) (Polygon.cpp:158)
+==17566==    by 0x114908: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:375)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Invalid read of size 4
+==17566==    at 0x115B90: Vector2D::operator-(Vector2D const&) (Units.h:66)
+==17566==    by 0x11492C: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:376)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566==  Address 0x18b0dcd0 is 0 bytes after a block of size 0 alloc'd
+==17566==    at 0x48447A8: malloc (vg_replace_malloc.c:446)
+==17566==    by 0x11353B: Polygon::PointsColliding(Vector2D*, int, Vector2D*, int) (Polygon.cpp:158)
+==17566==    by 0x114908: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:375)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Invalid read of size 4
+==17566==    at 0x115BB3: Vector2D::operator-(Vector2D const&) (Units.h:66)
+==17566==    by 0x11492C: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:376)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566==  Address 0x18b0dcdc is 12 bytes after a block of size 0 alloc'd
+==17566==    at 0x48447A8: malloc (vg_replace_malloc.c:446)
+==17566==    by 0x11353B: Polygon::PointsColliding(Vector2D*, int, Vector2D*, int) (Polygon.cpp:158)
+==17566==    by 0x114908: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:375)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Invalid read of size 4
+==17566==    at 0x115BBC: Vector2D::operator-(Vector2D const&) (Units.h:66)
+==17566==    by 0x11492C: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:376)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566==  Address 0x18b0dcd4 is 4 bytes after a block of size 0 alloc'd
+==17566==    at 0x48447A8: malloc (vg_replace_malloc.c:446)
+==17566==    by 0x11353B: Polygon::PointsColliding(Vector2D*, int, Vector2D*, int) (Polygon.cpp:158)
+==17566==    by 0x114908: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:375)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Invalid read of size 4
+==17566==    at 0x11296C: Vector2D::operator+(Vector2D const&) (Units.h:53)
+==17566==    by 0x11496A: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:376)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566==  Address 0x18b0dcd0 is 0 bytes after a block of size 0 alloc'd
+==17566==    at 0x48447A8: malloc (vg_replace_malloc.c:446)
+==17566==    by 0x11353B: Polygon::PointsColliding(Vector2D*, int, Vector2D*, int) (Polygon.cpp:158)
+==17566==    by 0x114908: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:375)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Invalid read of size 4
+==17566==    at 0x112997: Vector2D::operator+(Vector2D const&) (Units.h:53)
+==17566==    by 0x11496A: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:376)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566==  Address 0x18b0dcd4 is 4 bytes after a block of size 0 alloc'd
+==17566==    at 0x48447A8: malloc (vg_replace_malloc.c:446)
+==17566==    by 0x11353B: Polygon::PointsColliding(Vector2D*, int, Vector2D*, int) (Polygon.cpp:158)
+==17566==    by 0x114908: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:375)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Use of uninitialised value of size 8
+==17566==    at 0x1139A7: Polygon::PointInWichLine(Vector2D*, int, Vector2D) (Polygon.cpp:207)
+==17566==    by 0x1149B6: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:384)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Conditional jump or move depends on uninitialised value(s)
+==17566==    at 0x1139B6: Polygon::PointInWichLine(Vector2D*, int, Vector2D) (Polygon.cpp:208)
+==17566==    by 0x1149B6: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:384)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+==17566== Use of uninitialised value of size 8
+==17566==    at 0x1139DE: Polygon::PointInWichLine(Vector2D*, int, Vector2D) (Polygon.cpp:208)
+==17566==    by 0x1149B6: Polygon::CheckForCollision(Object**, int, float, SDL_Renderer*, int) (Polygon.cpp:384)
+==17566==    by 0x1174F6: generation() (player.cpp:112)
+==17566==    by 0x1168D7: main (main.cpp:110)
+==17566== 
+
