@@ -10,7 +10,7 @@ public:
     ~Object();
 
     void Update(float deltaTime);
-    virtual void Draw(SDL_Window*) {}
+    virtual void Draw(SDL_Window*, Vector2D) {}
     virtual CollisionsData CheckForCollision(Object**, int, float, int = 0) {return CollisionsData();}
 
     FrameData last_frame;

@@ -1,1 +1,1 @@
-./main play 
+./main train try18.nn2 

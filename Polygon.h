@@ -12,7 +12,7 @@ public:
     Polygon(Polygon& other);
     ~Polygon();
 
-    void Draw(SDL_Window* win) override;
+    void Draw(SDL_Window* win, Vector2D offset) override;
     void DrawInArray(float* array, int height, int width, int array_height, int array_width);
     CollisionsData CheckForCollision(Object** objects, int num_opbjects, float deltaTime, int n = 0) override;//func is recursive
 

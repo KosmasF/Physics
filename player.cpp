@@ -1,6 +1,6 @@
 #include "player.h"
 
-void setup()
+void setup(Vector2D offset)
 {
     srand(time(NULL));
     survivors = (NeuralNetwork*)malloc(SURVIVOR_NUM * sizeof(NeuralNetwork));
@@ -21,7 +21,7 @@ void setup()
 
    
     printf("Play thread started.\n");
-    pthread_create(&play_thread_id, nullptr, PlayCurrent, nullptr);
+    pthread_create(&play_thread_id, nullptr, PlayCurrent, (void*)&offset);
     // pthread_join(play_thread_id, NULL);
 }
 
@@ -86,157 +86,34 @@ void generation()
 
     for(int batch = 0; batch < BATCH_SIZE; batch++)
     {
-        Polygon a(ground), b(right_wall), c(left_wall), d(rocket), e(target), f(wall);
-        Object* objects[] = {&a, &b, &c, &d, &e, &f};
-        current_scene_objects = objects;
-        num_objects = sizeof(objects) / sizeof(Object*);
-        
-        PlayerData player_data;
-
-        float time;
-        for(time = 0; time < DURATION_SEC; time+=DELTA_TIME)
-        {
-            // DRAW SCREEN
-            float* input = (float*)malloc(NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH * sizeof(float));
-            for(int i = 0; i < NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH; i++)
-                input[i] = 0;
-            //input[NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH] = FLT_MAX;
-
-            // OBSTACLE LAYER   
-            for(int i = 0; i < sizeof(objects) / sizeof(Object*); i++)
-            {
-                if(((Polygon*)objects[i])->ReturnCollisionLayer() == OBSTACLE_LAYER)
-                {
-                    ((Polygon*)objects[i])->DrawInArray(input + (OBSTACLE_LAYER_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
-                }
-                else if(((Polygon*)objects[i])->ReturnCollisionLayer() == RESTING_LAYER)
-                {
-                    ((Polygon*)objects[i])->DrawInArray(input + (RESTING_LAYER_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
-                }
-                else if(((Polygon*)objects[i])->ReturnCollisionLayer() == DESTINATION_LAYER)
-                {
-                    ((Polygon*)objects[i])->DrawInArray(input + (DESTINATION_LAYER_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
-                }
-                else if(((Polygon*)objects[i])->ReturnCollisionLayer() == ROCKET_LAYER)
-                {
-                    ((Polygon*)objects[i])->DrawInArray(input + (ROCKET_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
-                }
-            }
-            if(time != 0)
-                memcpy(input + (ROCKET_PREVIOUS_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), previous_frame, INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
-            memcpy(previous_frame, input + (ROCKET_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
-
-            
-            float* output = neuralNetworks[batch].Generate(input, false);
-            free(input);
-            //float* output = nullptr;
-            
-            // printf("%f %f\n", output[OUT_MOVE_RIGHT_ID], output[OUT_MOVE_LEFT_ID]);
-            // rocket_ptr->ApplyAccel({25, 50}, {GRAVITY * min(max((output[OUT_MOVE_RIGHT_ID]), 0), 1), -GRAVITY * min(max((output[OUT_MOVE_RIGHT_ID]), 0), 1)}, DELTA_TIME);
-            // rocket_ptr->ApplyAccel({0, 50}, {-GRAVITY * min(max((output[OUT_MOVE_LEFT_ID]), 0), 1), -GRAVITY * min(max((output[OUT_MOVE_LEFT_ID]), 0), 1)}, DELTA_TIME);
-            ((Polygon*)objects[3])->ApplyAccel({25, 50}, {GRAVITY * output[OUT_MOVE_RIGHT_ID], -GRAVITY * output[OUT_MOVE_RIGHT_ID]}, DELTA_TIME);
-            ((Polygon*)objects[3])->ApplyAccel({0, 50}, {-GRAVITY * output[OUT_MOVE_LEFT_ID], -GRAVITY * output[OUT_MOVE_LEFT_ID]}, DELTA_TIME);
-            free(output);
-
-            //if(output)
-
-            // SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xff);
-            // SDL_RenderClear(renderer);
-
-            // for(int i = 0; i < num_objects; i++)
-            // {
-            //     objects_ptr[i]->Draw(win);
-            // }
-
-            // SDL_RenderPresent(renderer);
-            // SDL_UpdateWindowSurface(win);
-
-            // //DECIDE CHOICE
-            // SDL_Surface* windowSurface = SDL_GetWindowSurface(win);
-            // windowSurface->pixels;//pixles :)
-
-
-            //UPDATE
-            for(int i = 0; i < sizeof(objects) / sizeof(Object*); i++)
-            {
-                objects[i]->Update(DELTA_TIME);
-                CollisionsData data =((Polygon*)objects[i])->CheckForCollision(objects, sizeof(objects) / sizeof(Object*), DELTA_TIME);
-                bool in_contact_with_ground = false;
-                if(data.num > 0)
-                {
-                    for(int i = 0; i < data.num; i++)
-                    {
-                        if(data.data[i].collision_layer_1 == ROCKET_LAYER || data.data[i].collision_layer_2 == ROCKET_LAYER)
-                        {
-                            if(data.data[i].collision_layer_1 == OBSTACLE_LAYER || data.data[i].collision_layer_2 == OBSTACLE_LAYER)
-                            {
-                                player_data.collided = true;
-                                goto EVAL;
-                            }   
-                            else if(data.data[i].collision_layer_1 == DESTINATION_LAYER || data.data[i].collision_layer_2 == DESTINATION_LAYER)
-                            {
-                                player_data.succeded = true;
-                                goto EVAL;
-                            }
-                            else if(data.data[i].collision_layer_1 == RESTING_LAYER || data.data[i].collision_layer_2 == RESTING_LAYER)
-                            {
-                                if(!player_data.lifted_off)
-                                    in_contact_with_ground = true;
-                                else{
-                                    player_data.collided = true;
-                                    goto EVAL;
-                                }
-                            }
-                        }
-                    }
-                }
-                if(!in_contact_with_ground)
-                    player_data.lifted_off = true;
-            }
-            float eval = GetEval(((Polygon*)objects[3])->ReturnPosition(), ((Polygon*)objects[4])->ReturnPosition(), true, false);
-            if(eval > player_data.max_eval)
-                player_data.max_eval = eval;
-        }
-
-EVAL:
-    float eval = GetEval(((Polygon*)objects[3])->ReturnPosition(), ((Polygon*)objects[4])->ReturnPosition(), player_data.collided, player_data.succeded);
-
-    eval += player_data.max_eval;
-    // eval -= abs(((Polygon*)objects[3])->ReturnRotation()) * RADIAN;
-    if(player_data.succeded)
-        eval -= time;
-    else
-        eval += time;
-
-    evals[batch] = eval;
-    printf("Eval: %f\n", eval);
-    num_objects = 0;
-    pthread_mutex_lock(&p_mutex);
-    pthread_kill(play_thread_id, SIGHOLD);
-    pthread_cond_wait(&has_stopped, &p_mutex);
-    pthread_mutex_unlock(&p_mutex);
-    // printf("Eval ended!\n");
+        evals[batch] = simulate(&neuralNetworks[batch]);
     }
 
     float max_eval[SURVIVOR_NUM];
     int max_eval_id[SURVIVOR_NUM];
-    for(int i = 0; i < SURVIVOR_NUM; i++)
-    {
+
+    for (int i = 0; i < SURVIVOR_NUM; i++) {
         max_eval[i] = -INFINITY;
-        max_eval_id[i] = 0;
+        max_eval_id[i] = -1;
     }
-    for(int eval = 0; eval < BATCH_SIZE; eval++)
-    {
-        for(int i = 0; i < SURVIVOR_NUM; i++)
-        {
-            if(evals[eval] >= max_eval[i])
-            {
+
+   
+    for (int eval = 0; eval < BATCH_SIZE; eval++) {
+        for (int i = 0; i < SURVIVOR_NUM; i++) {
+            if (evals[eval] >= max_eval[i]) {
+                
+                for (int j = SURVIVOR_NUM - 1; j > i; j--) {
+                    max_eval[j] = max_eval[j - 1];
+                    max_eval_id[j] = max_eval_id[j - 1];
+                }
+               
                 max_eval[i] = evals[eval];
                 max_eval_id[i] = eval;
-                break; 
+                break;
             }
         }
     }
+
     for(int i = 0; i < SURVIVOR_NUM; i++)
     {
         survivors[i].~NeuralNetwork();
@@ -256,7 +133,141 @@ EVAL:
     printf("\n");
 }
 
-void play(NeuralNetwork* nn, SDL_Window* win)
+float simulate(NeuralNetwork *nn)
+{
+    Polygon a(ground), b(right_wall), c(left_wall), d(rocket), e(target), f(wall);
+    Object* objects[] = {&a, &b, &c, &d, &e, &f};
+    current_scene_objects = objects;
+    num_objects = sizeof(objects) / sizeof(Object*);
+    
+    PlayerData player_data;
+
+    float time;
+    for(time = 0; time < DURATION_SEC; time+=DELTA_TIME)
+    {
+        // DRAW SCREEN
+        float* input = (float*)malloc(NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH * sizeof(float));
+        for(int i = 0; i < NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH; i++)
+            input[i] = 0;
+        //input[NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH] = FLT_MAX;
+
+        // OBSTACLE LAYER   
+        for(int i = 0; i < sizeof(objects) / sizeof(Object*); i++)
+        {
+            if(((Polygon*)objects[i])->ReturnCollisionLayer() == OBSTACLE_LAYER)
+            {
+                ((Polygon*)objects[i])->DrawInArray(input + (OBSTACLE_LAYER_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
+            }
+            else if(((Polygon*)objects[i])->ReturnCollisionLayer() == RESTING_LAYER)
+            {
+                ((Polygon*)objects[i])->DrawInArray(input + (RESTING_LAYER_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
+            }
+            else if(((Polygon*)objects[i])->ReturnCollisionLayer() == DESTINATION_LAYER)
+            {
+                ((Polygon*)objects[i])->DrawInArray(input + (DESTINATION_LAYER_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
+            }
+            else if(((Polygon*)objects[i])->ReturnCollisionLayer() == ROCKET_LAYER)
+            {
+                ((Polygon*)objects[i])->DrawInArray(input + (ROCKET_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), HEIGHT, WIDTH, INPUT_HEIGHT, INPUT_WIDTH);
+            }
+        }
+        if(time != 0)
+            memcpy(input + (ROCKET_PREVIOUS_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), previous_frame, INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
+        memcpy(previous_frame, input + (ROCKET_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
+
+        
+        float* output = nn->Generate(input, false);
+        free(input);
+        //float* output = nullptr;
+        
+        // printf("%f %f\n", output[OUT_MOVE_RIGHT_ID], output[OUT_MOVE_LEFT_ID]);
+        // rocket_ptr->ApplyAccel({25, 50}, {GRAVITY * min(max((output[OUT_MOVE_RIGHT_ID]), 0), 1), -GRAVITY * min(max((output[OUT_MOVE_RIGHT_ID]), 0), 1)}, DELTA_TIME);
+        // rocket_ptr->ApplyAccel({0, 50}, {-GRAVITY * min(max((output[OUT_MOVE_LEFT_ID]), 0), 1), -GRAVITY * min(max((output[OUT_MOVE_LEFT_ID]), 0), 1)}, DELTA_TIME);
+        ((Polygon*)objects[3])->ApplyAccel({25, 50}, {GRAVITY * output[OUT_MOVE_RIGHT_ID], -GRAVITY * output[OUT_MOVE_RIGHT_ID]}, DELTA_TIME);
+        ((Polygon*)objects[3])->ApplyAccel({0, 50}, {-GRAVITY * output[OUT_MOVE_LEFT_ID], -GRAVITY * output[OUT_MOVE_LEFT_ID]}, DELTA_TIME);
+        free(output);
+
+        //if(output)
+
+        // SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xff);
+        // SDL_RenderClear(renderer);
+
+        // for(int i = 0; i < num_objects; i++)
+        // {
+        //     objects_ptr[i]->Draw(win);
+        // }
+
+        // SDL_RenderPresent(renderer);
+        // SDL_UpdateWindowSurface(win);
+
+        // //DECIDE CHOICE
+        // SDL_Surface* windowSurface = SDL_GetWindowSurface(win);
+        // windowSurface->pixels;//pixles :)
+
+
+        //UPDATE
+        for(int i = 0; i < sizeof(objects) / sizeof(Object*); i++)
+        {
+            objects[i]->Update(DELTA_TIME);
+            CollisionsData data =((Polygon*)objects[i])->CheckForCollision(objects, sizeof(objects) / sizeof(Object*), DELTA_TIME);
+            bool in_contact_with_ground = false;
+            if(data.num > 0)
+            {
+                for(int i = 0; i < data.num; i++)
+                {
+                    if(data.data[i].collision_layer_1 == ROCKET_LAYER || data.data[i].collision_layer_2 == ROCKET_LAYER)
+                    {
+                        if(data.data[i].collision_layer_1 == OBSTACLE_LAYER || data.data[i].collision_layer_2 == OBSTACLE_LAYER)
+                        {
+                            player_data.collided = true;
+                            goto EVAL;
+                        }   
+                        else if(data.data[i].collision_layer_1 == DESTINATION_LAYER || data.data[i].collision_layer_2 == DESTINATION_LAYER)
+                        {
+                            player_data.succeded = true;
+                            goto EVAL;
+                        }
+                        else if(data.data[i].collision_layer_1 == RESTING_LAYER || data.data[i].collision_layer_2 == RESTING_LAYER)
+                        {
+                            if(!player_data.lifted_off)
+                                in_contact_with_ground = true;
+                            else{
+                                player_data.collided = true;
+                                goto EVAL;
+                            }
+                        }
+                    }
+                }
+            }
+            if(!in_contact_with_ground)
+                player_data.lifted_off = true;
+        }
+        float eval = GetEval(((Polygon*)objects[3])->ReturnPosition(), ((Polygon*)objects[4])->ReturnPosition(), true, false);
+        if(eval > player_data.max_eval)
+            player_data.max_eval = eval;
+    }
+
+EVAL:
+    float eval = GetEval(((Polygon*)objects[3])->ReturnPosition(), ((Polygon*)objects[4])->ReturnPosition(), player_data.collided, player_data.succeded);
+
+    eval += player_data.max_eval;
+    // eval -= abs(((Polygon*)objects[3])->ReturnRotation()) * RADIAN;
+    if(player_data.succeded)
+    eval -= time;
+    else
+    eval += time;
+
+    printf("Eval: %f\n", eval);
+    num_objects = 0;
+    pthread_mutex_lock(&p_mutex);
+    pthread_kill(play_thread_id, SIGHOLD);
+    pthread_cond_wait(&has_stopped, &p_mutex);
+    pthread_mutex_unlock(&p_mutex);
+    // printf("Eval ended!\n");
+    return eval;
+}
+
+void play(NeuralNetwork* nn, SDL_Window* win, Vector2D offset)
 {
     previous_frame = (float*)malloc(INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
     SDL_LockMutex(mutex);
@@ -321,7 +332,7 @@ void play(NeuralNetwork* nn, SDL_Window* win)
 
         for(int i = 0; i < sizeof(objects) / sizeof(Object*); i++)
         {
-            objects[i]->Draw(win);
+            objects[i]->Draw(win, offset);
         }
 
         SDL_RenderPresent(renderer);
@@ -363,14 +374,14 @@ void play(NeuralNetwork* nn, SDL_Window* win)
     SDL_UnlockMutex(mutex);
 }
 
-void DrawScene(Object**& scene, int& num_objects, SDL_Window *win, SDL_Renderer* renderer)
+void DrawScene(Object**& scene, int& num_objects, SDL_Window *win, SDL_Renderer* renderer, Vector2D offset)
 {
     SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xff);
     SDL_RenderClear(renderer);
 
     for(int i = 0; i < num_objects; i++)
     {
-        scene[i]->Draw(win);
+        scene[i]->Draw(win, offset);
         if(play_thread_wait)
             goto SEND_SIGNAL;
     }
@@ -386,15 +397,16 @@ void DrawScene(Object**& scene, int& num_objects, SDL_Window *win, SDL_Renderer*
     SDL_UpdateWindowSurface(win);
 }
 
-void* PlayCurrent(void *)
+void* PlayCurrent(void * args)
 {
+    Vector2D offset = ((Vector2D*)args)[0];
     SDL_LockMutex(mutex);
     SDL_GLContext context = SDL_GL_CreateContext(win);
     SDL_GL_MakeCurrent(win, context);
     SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, 0);
     while(play_thread_run)
     {
-        DrawScene(current_scene_objects, num_objects ,win, renderer);
+        DrawScene(current_scene_objects, num_objects ,win, renderer, offset);
     }
     SDL_DestroyRenderer(renderer);
     SDL_GL_MakeCurrent(NULL, NULL);
@@ -403,12 +415,13 @@ void* PlayCurrent(void *)
     return nullptr;
 }
 
-void* PlayBest(void *)
+void* PlayBest(void* args)
 {
+    Vector2D offset = ((Vector2D*)args)[0];
     while(true)
     {
         NeuralNetwork nn = survivors[0];
-        play(&nn, win);
+        play(&nn, win,offset);
     }
     return nullptr;
 }

@@ -25,7 +25,7 @@ Polygon::~Polygon()
     free(points);
 }
 
-void Polygon::Draw(SDL_Window *win)
+void Polygon::Draw(SDL_Window *win, Vector2D offset)
 {
     SDL_Renderer* renderer = SDL_GetRenderer(win);
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -57,7 +57,7 @@ void Polygon::Draw(SDL_Window *win)
             if(IsPointInPolygon(points_translated, num_points, {(float)x, (float)y}))
             {
 
-                SDL_RenderDrawPoint(renderer, x, y);
+                SDL_RenderDrawPoint(renderer, x + offset.x, y + offset.y);
             }
         }
     }
@@ -65,7 +65,7 @@ void Polygon::Draw(SDL_Window *win)
     free(points_translated);
 
     SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
-    SDL_RenderDrawPoint(renderer, CenterOfMass.x + position.x, CenterOfMass.y + position.y);
+    SDL_RenderDrawPoint(renderer, CenterOfMass.x + position.x + offset.x, CenterOfMass.y + position.y + offset.y);
 
     //rotation+=0.001f;
 }
@@ -99,11 +99,13 @@ void Polygon::DrawInArray(float *array, int height, int width, int array_height,
     for(int x = min_x; x < max_x; x++)
     {
         for(int y = min_y; y < max_y; y++)
-        {                    
-            if(IsPointInPolygon(points_translated, num_points, {(float)x, (float)y}))
-            {
-
-                array[x + (y * array_width)] = 1;
+        {    
+            if(x <= array_width && y <= array_height && x >= 0 && y >= 0)// I had overflow, removw for try 17 and below!
+            {                
+                if(IsPointInPolygon(points_translated, num_points, {(float)x, (float)y}))
+                {
+                    array[x + (y * array_width)] = 1;
+                }
             }
         }
     }

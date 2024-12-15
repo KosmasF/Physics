@@ -13,6 +13,7 @@
 #include "player.h"
 
 #define MAX_ARGS 5
+#define GLOBAL_OFFSET (Vector2D){0, 250}
 
 // maxint
 SDL_Window* win;
@@ -83,7 +84,7 @@ int main(int argc, char** argv)
         printf("SDL_Init failed: %s\n", SDL_GetError());
         return -1;
     }
-    win = SDL_CreateWindow("Main", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_OPENGL);
+    win = SDL_CreateWindow("Main", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH + GLOBAL_OFFSET.x, HEIGHT + GLOBAL_OFFSET.y, SDL_WINDOW_OPENGL);
     // renderer = SDL_CreateRenderer(win, 0, 0);
     mutex = SDL_CreateMutex();
 
@@ -95,7 +96,7 @@ int main(int argc, char** argv)
     {
         if(!strcmp(argv_copy[1], "play"))
         {
-            SDL_Renderer* renderer = SDL_CreateRenderer(win, 0, 0);
+            SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, 0);
             float start_time = clock() / (float)CLOCKS_PER_SEC;
             deltaTime = 0;
             while(Loop((Polygon*)objects[3]))
@@ -114,7 +115,7 @@ int main(int argc, char** argv)
 
                 for(int i = 0; i < sizeof(objects) / sizeof(Object*); i++)
                 {
-                    objects[i]->Draw(win);
+                    objects[i]->Draw(win, GLOBAL_OFFSET);
                 }
 
                 SDL_RenderPresent(renderer);
@@ -123,8 +124,8 @@ int main(int argc, char** argv)
                 float end_time = clock() / (float)CLOCKS_PER_SEC;
                 deltaTime = end_time - start_time;
                 start_time = end_time;
-                SDL_DestroyRenderer(renderer);
             }
+            SDL_DestroyRenderer(renderer);
         }
         else if(!strcmp(argv_copy[1], "train"))
         {
@@ -136,7 +137,7 @@ int main(int argc, char** argv)
             {
                 survivor_filename = argv_copy[3];
             }
-            setup();
+            setup(GLOBAL_OFFSET);
 
             while(Loop(nullptr))
             {
@@ -150,7 +151,7 @@ int main(int argc, char** argv)
             if(argc_copy > 2)
             {
                 NeuralNetwork nn(argv_copy[2], &gpu);
-                play(&nn, win);
+                play(&nn, win, GLOBAL_OFFSET);
                 while(Loop(nullptr)){}
             }
             else

@@ -42,8 +42,8 @@ inline NeuralNetwork* survivors;
 
 inline GPU gpu;
 
-inline int layerSize[] = {INPUT_WIDTH * INPUT_HEIGHT * NUM_INPUT_LAYERS, 1024,512,512, 2};
-inline float (*ActivationMethods[])(float) = {None, None, None, Sigmoid};
+inline int layerSize[] = {INPUT_WIDTH * INPUT_HEIGHT * NUM_INPUT_LAYERS, 4,2};
+inline float (*ActivationMethods[])(float) = {None, Sigmoid};
 inline const bool normalizeOutput = true;
 inline pthread_t play_thread_id;
 inline bool play_thread_wait = false;
@@ -80,16 +80,17 @@ struct PlayerData
     bool succeded = false;
 };
 
-void setup();
+void setup(Vector2D offset);
 
 void generation();
+float simulate(NeuralNetwork* nn);
 
 void terminate();
 
 float GetEval(Vector2D pos, Vector2D target_pos, bool collided, bool succedeed);
 
-void play(NeuralNetwork* nn, SDL_Window* win);
-void DrawScene(Object**& scene, int& num_objects, SDL_Window* win, SDL_Renderer* renderer);
+void play(NeuralNetwork* nn, SDL_Window* win, Vector2D offset);
+void DrawScene(Object**& scene, int& num_objects, SDL_Window* win, SDL_Renderer* renderer, Vector2D offset);
 
-void* PlayBest(void*);
-void* PlayCurrent(void*);
+void* PlayBest(void* args);
+void* PlayCurrent(void* args);

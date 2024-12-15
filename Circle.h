@@ -8,7 +8,7 @@ class Circle : public Object
 public:
     Circle(Vector2D position, float rotation, float mass, float gravityMultiplier, float coefficient_of_restitution, int collision_layer, int* colliding_layers, int num_colliding_layers, float radius, SDL_Color color);
 
-    void Draw(SDL_Window* win) override;
+    void Draw(SDL_Window* win, Vector2D offset) override;
 
 private:
     float radius;

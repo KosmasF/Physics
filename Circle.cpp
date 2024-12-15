@@ -7,7 +7,7 @@ Circle::Circle(Vector2D position, float rotation, float mass, float gravityMulti
     this->color = color;
 }
 
-void Circle::Draw(SDL_Window* win)
+void Circle::Draw(SDL_Window* win, Vector2D offset)
 {
     SDL_Renderer* renderer = SDL_GetRenderer(win);
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -20,7 +20,7 @@ void Circle::Draw(SDL_Window* win)
         {
             if(sqrt((x * x) + (y * y)) < radius)
             {
-                points[buffer] = (SDL_Point){(int)position.x - x, (int)position.y - y};
+                points[buffer] = (SDL_Point){(int)position.x - x + offset.x, (int)position.y - y + offset.y};
                 buffer++;
             }
         }
