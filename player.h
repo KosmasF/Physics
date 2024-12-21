@@ -9,6 +9,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include "Signals.h"
+#include "hsl.h"
 
 #define OBSTACLE_LAYER -1// Layer -1 is prohibited
 #define RESTING_LAYER 0
@@ -42,6 +43,8 @@
 #define MAX_LAYER_SIZE 128
 
 #define REPLAY_SPEED 1
+
+// #define PRINT_TIME
 
 inline NeuralNetwork* survivors;
 

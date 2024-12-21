@@ -1,0 +1,2 @@
+clFinish: < 27 ms
+blocking_write: < 29 ms

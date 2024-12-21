@@ -102,9 +102,9 @@ void generation()
             for(int l = 1; l < _layer_num - 1; l++)
             {
                 if(l < nn->LayerNum)
-                    _layer_size[l] = nn->LayerSize[l] + (rand() % (MAX_LAYER_NUM - nn->LayerSize[l] + 1));
+                    _layer_size[l] = nn->LayerSize[l] + (rand() % (MAX_LAYER_SIZE - nn->LayerSize[l] + 1));
                 else
-                    _layer_size[l] = (rand() % (MAX_LAYER_NUM - 1)) + 1;
+                    _layer_size[l] = (rand() % (MAX_LAYER_SIZE - 1)) + 1;
             }
             _layer_size[0] = INPUT_HEIGHT * INPUT_WIDTH * NUM_INPUT_LAYERS;
             _layer_size[_layer_num - 1] = 2;
@@ -215,7 +215,9 @@ float simulate(NeuralNetwork *nn)
     for(time = 0; time < DURATION_SEC; time+=DELTA_TIME)
     {
         // DRAW SCREEN
+        #ifdef PRINT_TIME
         TimeSetZero();
+        #endif
         float* input = (float*)malloc(NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH * sizeof(float));
         for(int i = 0; i < NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH; i++)
             input[i] = 0;
@@ -245,10 +247,14 @@ float simulate(NeuralNetwork *nn)
             memcpy(input + (ROCKET_PREVIOUS_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), previous_frame, INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
         memcpy(previous_frame, input + (ROCKET_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
 
-        // TimeElapsed("Input setup: ");
+        #ifdef PRINT_TIME
+        TimeElapsed("Input setup: ");
+        #endif
         float* output = nn->Generate(input, false);
         free(input);
-        // TimeElapsed("Generate input: ");
+        #ifdef PRINT_TIME
+        TimeElapsed("Generate input: ");
+        #endif
         //float* output = nullptr;
         
         // printf("%f %f\n", output[OUT_MOVE_RIGHT_ID], output[OUT_MOVE_LEFT_ID]);
@@ -316,7 +322,9 @@ float simulate(NeuralNetwork *nn)
         float eval = GetEval(((Polygon*)objects[3])->ReturnPosition(), ((Polygon*)objects[4])->ReturnPosition(), true, false);
         if(eval > player_data.max_eval)
             player_data.max_eval = eval;
-        // TimeElapsed("Physics: ");
+        #ifdef PRINT_TIME
+        TimeElapsed("Physics: ");
+        #endif
     }
 
 EVAL:
@@ -347,6 +355,10 @@ void play(NeuralNetwork* nn, SDL_Window* win, Vector2D offset)
     SDL_GL_MakeCurrent(win, context);
     SDL_Renderer* renderer = SDL_CreateRenderer(win, -1, 0);
 
+    const int engine_width = 200;
+    const int engine_height = 500;
+    SDL_Window* engine_window = SDL_CreateWindow("Engines", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,engine_width, engine_height, 0);
+    SDL_Renderer* engine_renderer = SDL_CreateRenderer(engine_window, -1, 0);
 
     Polygon a(ground), b(right_wall), c(left_wall), d(rocket), e(target), f(wall);
     Object* objects[] = {&a, &b, &c, &d, &e, &f};
@@ -395,6 +407,21 @@ void play(NeuralNetwork* nn, SDL_Window* win, Vector2D offset)
         // rocket_ptr->ApplyAccel({0, 50}, {-GRAVITY * min(max((output[OUT_MOVE_LEFT_ID]), 0), 1), -GRAVITY * min(max((output[OUT_MOVE_LEFT_ID]), 0), 1)}, DELTA_TIME);
         ((Polygon*)objects[3])->ApplyAccel({25, 50}, {GRAVITY * max(0, output[OUT_MOVE_RIGHT_ID]), -GRAVITY* max(0, output[OUT_MOVE_RIGHT_ID])}, DELTA_TIME);
         ((Polygon*)objects[3])->ApplyAccel({0, 50}, {-GRAVITY * max(0, output[OUT_MOVE_LEFT_ID]), -GRAVITY* max(0, output[OUT_MOVE_LEFT_ID])}, DELTA_TIME);
+
+        SDL_SetRenderDrawColor(engine_renderer, 0x00, 0x00, 0x00, 0xff);
+        SDL_RenderClear(engine_renderer);
+        // SDL_SetRenderDrawColor(engine_renderer, 0xff, 0xff, 0xff, 0xff);
+        // SDL_RenderDrawLine(engine_renderer, 10, 0, 10, 100);
+        RGB left_color = HSLToRGB({100 - map(output[OUT_MOVE_LEFT_ID] , 0, 1, 0, 100), 1.f, .5f});
+        SDL_SetRenderDrawColor(engine_renderer, left_color.R, left_color.G, left_color.B, 0xff);
+        SDL_Rect left_rect = {0,engine_height-map(output[OUT_MOVE_LEFT_ID], 0, 1, 0, engine_height),engine_width/2, engine_height};
+        SDL_RenderFillRect(engine_renderer, &left_rect);
+        RGB right_color = HSLToRGB({100 - map(output[OUT_MOVE_RIGHT_ID] , 0, 1, 0, 100), 1.f, .5f});
+        SDL_SetRenderDrawColor(engine_renderer, right_color.R, right_color.G, right_color.B, 0xff);
+        SDL_Rect right_rect = {engine_width/2,engine_height-map(output[OUT_MOVE_RIGHT_ID], 0, 1, 0, engine_height),engine_width,engine_height};
+        SDL_RenderFillRect(engine_renderer, &right_rect);
+        SDL_RenderPresent(engine_renderer);
+        SDL_UpdateWindowSurface(engine_window);
         free(output);
 
         //if(output)
@@ -423,11 +450,11 @@ void play(NeuralNetwork* nn, SDL_Window* win, Vector2D offset)
                     {
                         if(data.data[i].collision_layer_1 == OBSTACLE_LAYER || data.data[i].collision_layer_2 == OBSTACLE_LAYER)
                         {
-                            return;
+                            goto SHUTDOWN;
                         }   
                         else if(data.data[i].collision_layer_1 == DESTINATION_LAYER || data.data[i].collision_layer_2 == DESTINATION_LAYER)
                         {
-                            return;
+                            goto SHUTDOWN;
                         }
                     }
                 }
@@ -441,6 +468,9 @@ void play(NeuralNetwork* nn, SDL_Window* win, Vector2D offset)
         usleep(max(0, res_time * 1000 * 1000));
         // nanosleep(&req, NULL);
     }
+    SHUTDOWN:
+    SDL_DestroyRenderer(engine_renderer);
+    SDL_DestroyWindow(engine_window);
     SDL_DestroyRenderer(renderer);
     SDL_GL_DeleteContext(context);
     SDL_UnlockMutex(mutex);
