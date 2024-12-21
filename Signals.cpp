@@ -5,6 +5,7 @@ void Signals_Setup()
 {
     signal(SIGSEGV, SegmentationFault);
     signal(SIGHOLD, FuncStop);
+    signal(SIGINT, Interrupt);
 }
 
 void SegmentationFault(int sig)
@@ -19,4 +20,9 @@ void FuncStop(int sig)
     {
         play_thread_wait = true;
     }
+}
+
+void Interrupt(int sig)
+{
+    exit(1);
 }

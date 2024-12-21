@@ -47,6 +47,18 @@ bool angles_point_to_each_other(float angle1, float angle2) {
     return angle_diff <= 90.f / RADIAN;
 }
 
+void TimeSetZero()
+{
+    start_time = clock() / (double)CLOCKS_PER_SEC;
+}
+
+void TimeElapsed(const char *message)
+{
+    double current_time = clock() / (double)CLOCKS_PER_SEC;
+    printf("%s%lf\n", message, current_time - start_time);
+    start_time = current_time;
+}
+
 float max(float a, float b) {
     return (a > b) ? a : b;
 }

@@ -48,7 +48,7 @@ float GetEval(Vector2D pos, Vector2D target_pos, bool collided, bool succeded)
     if(!collided)
         eval += 50;
     if(succeded)
-        eval += 1000;
+        eval += 100000;
 
     Vector2D relative_pos = pos - target_pos;
     float angle = relative_pos.perpendicular().perpendicular().perpendicular().angle();
@@ -62,6 +62,7 @@ float GetEval(Vector2D pos, Vector2D target_pos, bool collided, bool succeded)
 
 void generation()
 {
+    static bool first_it = true;
     NeuralNetwork* neuralNetworks = (NeuralNetwork*)malloc(BATCH_SIZE * sizeof(NeuralNetwork));
     for(int i = 0; i < SURVIVOR_NUM; i++)
     {
@@ -70,35 +71,99 @@ void generation()
 
     for(int i = SURVIVOR_NUM; i < BATCH_SIZE; i++)
     {
-        if(i < (BATCH_SIZE - RANDOM_NUM))
+        float muation_rate = (((float)(rand()) / RAND_MAX)) * MAX_MUTATION_RATE;
+        if(i < (BATCH_SIZE - RANDOM_NUM - EXPANSION_NUM))
             new (&neuralNetworks[i]) NeuralNetwork(survivors[i % SURVIVOR_NUM]);
+        else if(i < (BATCH_SIZE - EXPANSION_NUM))
+        {
+            int _layer_num = (rand() % (MAX_LAYER_NUM - 1)) + 1 + 2;
+            int* _layer_size = (int*)malloc(_layer_num * sizeof(int));
+            for(int l = 1; l < _layer_num - 1; l++)
+            {
+                _layer_size[l] = (rand() % (MAX_LAYER_SIZE - 1)) + 1;
+            }
+            _layer_size[0] = INPUT_HEIGHT * INPUT_WIDTH * NUM_INPUT_LAYERS;
+            _layer_size[_layer_num - 1] = 2;
+            float (*ActivationMethods[_layer_num - 1])(float);
+            for(int a = 0; a < _layer_num - 1; a++)
+            {
+                ActivationMethods[a] = (rand() % 2) ? None : Sigmoid;
+            }
+            ActivationMethods[_layer_num - 2] = Sigmoid;
+            new (&neuralNetworks[i]) NeuralNetwork(_layer_size, _layer_num, ActivationMethods, normalizeOutput, &gpu);
+            free(_layer_size);
+        }
         else
-            new (&neuralNetworks[i]) NeuralNetwork(layerSize, sizeof(layerSize) / sizeof(int), ActivationMethods, normalizeOutput, &gpu);
+        {
+            NeuralNetwork* nn = &survivors[i % SURVIVOR_NUM];
+            int layer_added = (rand() % (MAX_LAYER_NUM - nn->LayerNum + 1));
+            int _layer_num = nn->LayerNum + layer_added;
+            int* _layer_size = (int*)malloc(_layer_num * sizeof(int));
+            for(int l = 1; l < _layer_num - 1; l++)
+            {
+                if(l < nn->LayerNum)
+                    _layer_size[l] = nn->LayerSize[l] + (rand() % (MAX_LAYER_NUM - nn->LayerSize[l] + 1));
+                else
+                    _layer_size[l] = (rand() % (MAX_LAYER_NUM - 1)) + 1;
+            }
+            _layer_size[0] = INPUT_HEIGHT * INPUT_WIDTH * NUM_INPUT_LAYERS;
+            _layer_size[_layer_num - 1] = 2;
+            float (*ActivationMethods[_layer_num - 1])(float);
+            for(int a = 0; a < _layer_num - 1; a++)
+            {
+                if(a < nn->LayerNum - 1)
+                    ActivationMethods[a] = nn->ActivationMethods[a];
+                else
+                    ActivationMethods[a] = (rand() % 2) ? None : Sigmoid;
+            }
+            ActivationMethods[_layer_num - 2] = Sigmoid;
+            new (&neuralNetworks[i]) NeuralNetwork(_layer_size, _layer_num, ActivationMethods, normalizeOutput, &gpu);
+            NeuralNetwork* nn_new = &neuralNetworks[i];
+            // nn_new->PrintArchitecture();
+
+            // int weight_buffer = 0;
+            // int idx = 0;
+            for (int layer = 1; layer < _layer_num; layer++)
+            {
+                for (int nl = 0; nl < _layer_size[layer]; nl++)
+                {
+                    if(layer < nn->LayerNum)
+                        if(nl < nn->LayerSize[layer])
+                            nn_new->weights[nn_new->weights_buffer_lookup_table[nn_new->GetIndexOfNeuron(layer, nl)]] = nn->weights[nn->weights_buffer_lookup_table[nn->GetIndexOfNeuron(layer, nl)]];//I saved a bug
+                        else
+                            nn_new->weights[nn_new->weights_buffer_lookup_table[nn_new->GetIndexOfNeuron(layer, nl)]] = (((float)(rand()) / RAND_MAX) - (1 / 2.f)) * muation_rate;
+                    else
+                        nn_new->weights[nn_new->weights_buffer_lookup_table[nn_new->GetIndexOfNeuron(layer, nl)]] = (((float)(rand()) / RAND_MAX) - (1 / 2.f)) * muation_rate;
+
+                    // weights_buffer_lookup_table[idx] = weight_buffer;
+                    // weight_buffer += layerSize[layer - 1];
+                }
+            }
+            free(_layer_size);
+            continue;
+        }
         float weights_num = neuralNetworks[i].GetNumberOfWeights() ;
         float* mutation = (float*)malloc(weights_num * sizeof(float));
         for(int n = 0; n < weights_num; n++)
-            mutation[n] = (((float)(rand()) / RAND_MAX) - (1 / 2.f));
+            mutation[n] = (((float)(rand()) / RAND_MAX) - (1 / 2.f)) * muation_rate;
         neuralNetworks[i].AddToWeights(mutation);
         free(mutation);
     }
 
     float* evals = (float*)malloc(BATCH_SIZE * sizeof(float));
 
-    for(int batch = 0; batch < BATCH_SIZE; batch++)
+    for(int batch = first_it ? 0 : SURVIVOR_NUM; batch < BATCH_SIZE; batch++)
     {
         evals[batch] = simulate(&neuralNetworks[batch]);
     }
 
-    float max_eval[SURVIVOR_NUM];
-    int max_eval_id[SURVIVOR_NUM];
+    static float max_eval[SURVIVOR_NUM];
+    static int max_eval_id[SURVIVOR_NUM];
 
-    for (int i = 0; i < SURVIVOR_NUM; i++) {
+    for (int i = 0; first_it ? i < SURVIVOR_NUM : false; i++)
         max_eval[i] = -INFINITY;
-        max_eval_id[i] = -1;
-    }
-
    
-    for (int eval = 0; eval < BATCH_SIZE; eval++) {
+    for (int eval = first_it ? 0 : SURVIVOR_NUM; eval < BATCH_SIZE; eval++) {
         for (int i = 0; i < SURVIVOR_NUM; i++) {
             if (evals[eval] >= max_eval[i]) {
                 
@@ -119,6 +184,8 @@ void generation()
         survivors[i].~NeuralNetwork();
         new (&survivors[i]) NeuralNetwork(neuralNetworks[max_eval_id[i]]);
     }
+    for(int i = 0; i < SURVIVOR_NUM; i++)
+        max_eval_id[i] = i;
 
 
     free(evals);
@@ -128,9 +195,11 @@ void generation()
         neuralNetworks[i].~NeuralNetwork();
     free(neuralNetworks);
     
+    printf("Survivors: ");
     for(int i = 0; i < SURVIVOR_NUM; i++)
         printf("%f ", max_eval[i]);
     printf("\n");
+    first_it = false;
 }
 
 float simulate(NeuralNetwork *nn)
@@ -146,6 +215,7 @@ float simulate(NeuralNetwork *nn)
     for(time = 0; time < DURATION_SEC; time+=DELTA_TIME)
     {
         // DRAW SCREEN
+        TimeSetZero();
         float* input = (float*)malloc(NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH * sizeof(float));
         for(int i = 0; i < NUM_INPUT_LAYERS * INPUT_HEIGHT * INPUT_WIDTH; i++)
             input[i] = 0;
@@ -175,9 +245,10 @@ float simulate(NeuralNetwork *nn)
             memcpy(input + (ROCKET_PREVIOUS_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), previous_frame, INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
         memcpy(previous_frame, input + (ROCKET_INPUT_ID * INPUT_HEIGHT * INPUT_WIDTH), INPUT_HEIGHT * INPUT_HEIGHT * sizeof(float));
 
-        
+        // TimeElapsed("Input setup: ");
         float* output = nn->Generate(input, false);
         free(input);
+        // TimeElapsed("Generate input: ");
         //float* output = nullptr;
         
         // printf("%f %f\n", output[OUT_MOVE_RIGHT_ID], output[OUT_MOVE_LEFT_ID]);
@@ -245,6 +316,7 @@ float simulate(NeuralNetwork *nn)
         float eval = GetEval(((Polygon*)objects[3])->ReturnPosition(), ((Polygon*)objects[4])->ReturnPosition(), true, false);
         if(eval > player_data.max_eval)
             player_data.max_eval = eval;
+        // TimeElapsed("Physics: ");
     }
 
 EVAL:
@@ -255,9 +327,9 @@ EVAL:
     if(player_data.succeded)
     eval -= time;
     else
-    eval += time;
+        eval += time;
 
-    printf("Eval: %f\n", eval);
+    // printf("Eval: %f\n", eval);
     num_objects = 0;
     pthread_mutex_lock(&p_mutex);
     pthread_kill(play_thread_id, SIGHOLD);

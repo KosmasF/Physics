@@ -1,1 +1,1 @@
-./main train try18.nn2 
+./main show try22.nn2 

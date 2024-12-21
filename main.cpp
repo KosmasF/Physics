@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
-#include "time.h"
+#include <time.h>
 #include <string.h>
 
 #include "Loop.h"
@@ -151,6 +151,7 @@ int main(int argc, char** argv)
             if(argc_copy > 2)
             {
                 NeuralNetwork nn(argv_copy[2], &gpu);
+                nn.PrintArchitecture();
                 play(&nn, win, GLOBAL_OFFSET);
                 while(Loop(nullptr)){}
             }

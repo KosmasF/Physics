@@ -1,5 +1,8 @@
 #pragma once
-#include "math.h"
+#include <math.h>
+#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define GRAVITY 9.18f
 #define COLLISION_SEARCH_DEPTH 20
@@ -17,7 +20,6 @@
 
 float max(float a, float b);
 float min(float a, float b);
-
 
 struct Vector2D
 {
@@ -161,3 +163,10 @@ float angle_difference(float angle1, float angle2);
 
 // Function to check if two angles are pointing to each other
 bool angles_point_to_each_other(float angle1, float angle2);
+
+inline double start_time;
+void TimeSetZero();
+void TimeElapsed(const char* message);
+
+// Custom malloc implementation
+void* malloc(size_t size);

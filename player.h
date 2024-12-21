@@ -32,9 +32,14 @@
 #define DURATION_SEC 25
 #define DELTA_TIME (1.f / 10) //60fps
 
-#define BATCH_SIZE 50
-#define SURVIVOR_NUM 5
-#define RANDOM_NUM 4
+#define BATCH_SIZE 84
+#define SURVIVOR_NUM 4
+#define RANDOM_NUM 8
+#define EXPANSION_NUM 32
+
+#define MAX_MUTATION_RATE 2
+#define MAX_LAYER_NUM 4
+#define MAX_LAYER_SIZE 128
 
 #define REPLAY_SPEED 1
 
@@ -42,8 +47,8 @@ inline NeuralNetwork* survivors;
 
 inline GPU gpu;
 
-inline int layerSize[] = {INPUT_WIDTH * INPUT_HEIGHT * NUM_INPUT_LAYERS, 4,2};
-inline float (*ActivationMethods[])(float) = {None, Sigmoid};
+inline int layerSize[] = {INPUT_WIDTH * INPUT_HEIGHT * NUM_INPUT_LAYERS, 128, 32, 2};
+inline float (*ActivationMethods[])(float) = {Sigmoid, None, Sigmoid};
 inline const bool normalizeOutput = true;
 inline pthread_t play_thread_id;
 inline bool play_thread_wait = false;

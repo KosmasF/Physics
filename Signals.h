@@ -9,3 +9,4 @@ void Signals_Setup();
 
 void SegmentationFault(int sig);
 void FuncStop(int sig);
+void Interrupt(int sig);
