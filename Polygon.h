@@ -21,6 +21,7 @@ public:
 
     Vector2D* RotateAndTranslate();
     Vector2D ReturnPosition() {return position;}
+    void SetPosition(Vector2D new_position) {position = new_position;}
     int ReturnCollisionLayer() {return collision_layer;}
     float ReturnRotation() {return rotation;}
 

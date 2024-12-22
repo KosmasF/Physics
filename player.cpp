@@ -46,13 +46,13 @@ float GetEval(Vector2D pos, Vector2D target_pos, bool collided, bool succeded)
     //CALCULATE LOSS OF THE NN
     float eval = 0;
     if(!collided)
-        eval += 50;
+        eval += 0;
     if(succeded)
         eval += 100000;
 
     Vector2D relative_pos = pos - target_pos;
-    float angle = relative_pos.perpendicular().perpendicular().perpendicular().angle();
-    eval += fabs(angle) * RADIAN;
+    // float angle = relative_pos.perpendicular().perpendicular().perpendicular().angle();
+    // eval += fabs(angle) * RADIAN;
 
     float distance = (relative_pos / (Vector2D){WIDTH, HEIGHT}).len() / 10.f;
     eval -= distance;
@@ -62,7 +62,8 @@ float GetEval(Vector2D pos, Vector2D target_pos, bool collided, bool succeded)
 
 void generation()
 {
-    static bool first_it = true;
+    // static 
+    bool first_it = true;
     NeuralNetwork* neuralNetworks = (NeuralNetwork*)malloc(BATCH_SIZE * sizeof(NeuralNetwork));
     for(int i = 0; i < SURVIVOR_NUM; i++)
     {
@@ -154,7 +155,12 @@ void generation()
 
     for(int batch = first_it ? 0 : SURVIVOR_NUM; batch < BATCH_SIZE; batch++)
     {
-        evals[batch] = simulate(&neuralNetworks[batch]);
+        evals[batch] = (
+            min(simulate(&neuralNetworks[batch]),
+            min(simulate(&neuralNetworks[batch]),
+            min(simulate(&neuralNetworks[batch]),
+            simulate(&neuralNetworks[batch]))))
+        );
     }
 
     static float max_eval[SURVIVOR_NUM];
@@ -206,6 +212,9 @@ float simulate(NeuralNetwork *nn)
 {
     Polygon a(ground), b(right_wall), c(left_wall), d(rocket), e(target), f(wall);
     Object* objects[] = {&a, &b, &c, &d, &e, &f};
+    f.SetPosition({f.ReturnPosition().x, -250});
+    d.SetPosition({(float)(20 + (rand() % (WIDTH - 20 - 20))), d.ReturnPosition().y});
+
     current_scene_objects = objects;
     num_objects = sizeof(objects) / sizeof(Object*);
     
@@ -335,7 +344,7 @@ EVAL:
     if(player_data.succeded)
     eval -= time;
     else
-        eval += time;
+        ;// eval -= time;
 
     // printf("Eval: %f\n", eval);
     num_objects = 0;
@@ -362,6 +371,7 @@ void play(NeuralNetwork* nn, SDL_Window* win, Vector2D offset)
 
     Polygon a(ground), b(right_wall), c(left_wall), d(rocket), e(target), f(wall);
     Object* objects[] = {&a, &b, &c, &d, &e, &f};
+    f.SetPosition({f.ReturnPosition().x, -250});
 
     for(float time = 0; time < DURATION_SEC; time+=DELTA_TIME)
     {
